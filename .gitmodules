@@ -1,0 +1,3 @@
+[submodule "openarm_mujoco"]
+	path = openarm_mujoco
+	url = git@github.com:enactic/openarm_mujoco.git
