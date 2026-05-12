@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mujoco-test-openarm"
+version = "0.1.0"
+description = "OpenArm MuJoCo environments and ACT training utilities."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["openarm_env*", "ml*"]
