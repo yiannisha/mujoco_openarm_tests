@@ -11,6 +11,17 @@ from gymnasium.utils import EzPickle
 from openarm_env.reach.envs import DEFAULT_CAMERA_CONFIG
 
 
+PICK_PLACE_INITIAL_ROBOT_POSES = ("basic", "table_ready")
+TABLE_READY_LEFT_ARM_QPOS = np.array(
+    [-1.41740, -0.54928, 1.57080, 1.15990, 1.55928, -0.61053, -1.40502],
+    dtype=np.float64,
+)
+TABLE_READY_RIGHT_ARM_QPOS = np.array(
+    [1.40841, 0.65709, -1.57080, 1.31674, -1.56049, 0.65957, 1.39582],
+    dtype=np.float64,
+)
+
+
 class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
@@ -27,9 +38,14 @@ class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
         sticky_attach_finger_threshold: float = 0.01,
         sticky_release_finger_threshold: float = 0.02,
         sticky_attach_distance: float = 0.05,
+        initial_robot_pose: str = "basic",
         width: int = 480,
         height: int = 480,
     ) -> None:
+        if initial_robot_pose not in PICK_PLACE_INITIAL_ROBOT_POSES:
+            valid = ", ".join(PICK_PLACE_INITIAL_ROBOT_POSES)
+            raise ValueError(f"initial_robot_pose must be one of: {valid}")
+
         EzPickle.__init__(
             self,
             render_mode=render_mode,
@@ -40,6 +56,7 @@ class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
             sticky_attach_finger_threshold=sticky_attach_finger_threshold,
             sticky_release_finger_threshold=sticky_release_finger_threshold,
             sticky_attach_distance=sticky_attach_distance,
+            initial_robot_pose=initial_robot_pose,
             width=width,
             height=height,
         )
@@ -50,6 +67,7 @@ class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
         self._sticky_attach_finger_threshold = sticky_attach_finger_threshold
         self._sticky_release_finger_threshold = sticky_release_finger_threshold
         self._sticky_attach_distance = sticky_attach_distance
+        self.initial_robot_pose = initial_robot_pose
         self._model_path = (
             Path(__file__).resolve().parent.parent.parent
             / "openarm_mujoco"
@@ -335,8 +353,20 @@ class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
         qvel = self.init_qvel.copy()
         self._clear_attachment()
 
+        if self.initial_robot_pose == "table_ready":
+            qpos[self._left_arm_qpos_slice] = TABLE_READY_LEFT_ARM_QPOS
+            qpos[self._right_arm_qpos_slice] = TABLE_READY_RIGHT_ARM_QPOS
+
         qpos[self._left_arm_qpos_slice] += self.np_random.uniform(-0.05, 0.05, size=7)
         qpos[self._right_arm_qpos_slice] += self.np_random.uniform(-0.05, 0.05, size=7)
+        qpos[self._left_arm_qpos_slice] = self._clip_target_qpos(
+            qpos[self._left_arm_qpos_slice],
+            self.model.jnt_range[self._left_arm_qpos_slice],
+        )
+        qpos[self._right_arm_qpos_slice] = self._clip_target_qpos(
+            qpos[self._right_arm_qpos_slice],
+            self.model.jnt_range[self._right_arm_qpos_slice],
+        )
         qpos[self._left_finger_qpos_slice] = self.np_random.uniform(0.015, 0.03, size=2)
         qpos[self._right_finger_qpos_slice] = self.np_random.uniform(0.015, 0.03, size=2)
         qvel += self.np_random.uniform(-0.01, 0.01, size=self.model.nv)
@@ -354,6 +384,13 @@ class OpenArmBimanualPickPlaceEnv(MujocoEnv, EzPickle):
         self._set_target_marker()
 
         return self._get_obs()
+
+    def _clip_target_qpos(
+        self,
+        qpos: np.ndarray,
+        joint_limits: np.ndarray,
+    ) -> np.ndarray:
+        return np.clip(qpos, joint_limits[:, 0], joint_limits[:, 1])
 
     def step(self, action: np.ndarray):
         action = np.asarray(action, dtype=np.float32)

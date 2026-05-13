@@ -19,9 +19,13 @@ def main() -> None:
     render_mode_arg = sys.argv[2] if len(sys.argv) > 2 else "human"
     num_episodes = int(sys.argv[3]) if len(sys.argv) > 3 else 5
     policy_name = sys.argv[4].lower() if len(sys.argv) > 4 else "auto"
+    initial_robot_pose = sys.argv[5] if len(sys.argv) > 5 else "basic"
     render_mode = None if render_mode_arg.lower() == "none" else render_mode_arg
 
-    env = gym.make(env_id, render_mode=render_mode)
+    env_kwargs = {"render_mode": render_mode}
+    if env_id == openarm_env.PICK_PLACE_ENV_ID:
+        env_kwargs["initial_robot_pose"] = initial_robot_pose
+    env = gym.make(env_id, **env_kwargs)
     unwrapped = env.unwrapped
     if isinstance(unwrapped, OpenArmBimanualPickPlaceEnv):
         if policy_name == "grasp":
@@ -35,6 +39,8 @@ def main() -> None:
     print(f"env id: {env_id}")
     print(f"episodes: {num_episodes}")
     print(f"policy: {policy.__class__.__name__}")
+    if isinstance(unwrapped, OpenArmBimanualPickPlaceEnv):
+        print(f"initial robot pose: {initial_robot_pose}")
     max_steps = env.spec.max_episode_steps if env.spec is not None else 250
 
     for episode in range(num_episodes):

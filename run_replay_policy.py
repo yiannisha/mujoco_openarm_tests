@@ -26,6 +26,7 @@ def main() -> None:
     episode_path_arg = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("datasets/act_pick_place/episode_0000.npz")
     env_id = sys.argv[2] if len(sys.argv) > 2 else openarm_env.PICK_PLACE_ENV_ID
     render_mode_arg = sys.argv[3] if len(sys.argv) > 3 else "human"
+    initial_robot_pose = sys.argv[4] if len(sys.argv) > 4 else "basic"
     render_mode = None if render_mode_arg.lower() == "none" else render_mode_arg
 
     episode_path = resolve_episode_path(episode_path_arg)
@@ -37,6 +38,7 @@ def main() -> None:
     env_kwargs = {"render_mode": render_mode}
     if env_id == openarm_env.PICK_PLACE_ENV_ID:
         env_kwargs["sticky_grasp"] = True
+        env_kwargs["initial_robot_pose"] = initial_robot_pose
 
     env = gym.make(env_id, **env_kwargs)
     unwrapped = env.unwrapped
@@ -51,6 +53,7 @@ def main() -> None:
     print(f"episode file: {episode_path}")
     print(f"env id: {env_id}")
     print(f"render mode: {render_mode_arg}")
+    print(f"initial robot pose: {initial_robot_pose}")
     print(f"saved seed: {saved_seed}")
     print(f"saved steps: {saved_steps}")
     print(f"saved success: {saved_success}")

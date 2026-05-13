@@ -537,6 +537,7 @@ def evaluate_checkpoint(
         width=args.eval_width,
         height=args.eval_height,
         sticky_grasp=args.sticky_grasp,
+        initial_robot_pose=args.initial_robot_pose,
     )
     camera_names = eval_camera_names(policy.camera_names)
     renderers = create_renderers(env, camera_names, args.eval_width, args.eval_height)
@@ -760,6 +761,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-only", action="store_true")
     parser.add_argument("--ckpt-path", type=Path, default=None)
     parser.add_argument("--sticky-grasp", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--initial-robot-pose",
+        choices=("basic", "table_ready"),
+        default="basic",
+        help="Initial robot reset pose for pick-place evaluation rollouts.",
+    )
     parser.add_argument("--tensorboard-dir", type=Path, default=None)
     args = parser.parse_args()
     if args.eval_width is None or args.eval_height is None:

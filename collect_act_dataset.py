@@ -60,6 +60,12 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Enable or disable the sticky-grasp cheat when using the pick-place env.",
     )
+    parser.add_argument(
+        "--initial-robot-pose",
+        choices=("basic", "table_ready"),
+        default="basic",
+        help="Initial robot reset pose for the pick-place env.",
+    )
     return parser.parse_args()
 
 
@@ -301,6 +307,7 @@ def write_manifest(
         "height": args.height,
         "cameras": list(CAMERA_NAMES),
         "sticky_grasp": args.sticky_grasp,
+        "initial_robot_pose": args.initial_robot_pose,
         "max_episode_steps": env.spec.max_episode_steps if env.spec is not None else None,
         "policy_config": json_safe_value(policy),
         "controller_config": json_safe_value(controller),
@@ -319,6 +326,7 @@ def main() -> None:
     }
     if args.env_id == openarm_env.PICK_PLACE_ENV_ID:
         env_kwargs["sticky_grasp"] = args.sticky_grasp
+        env_kwargs["initial_robot_pose"] = args.initial_robot_pose
 
     env = gym.make(args.env_id, **env_kwargs)
     policy = choose_policy(env, args.policy)
